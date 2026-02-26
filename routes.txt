@@ -1,0 +1,6 @@
+git init
+git add .
+git commit -m "Initial Jungle World RP bot"
+git remote add origin https://github.com/YourUsername/github.com/major900/JWRP.git
+git branch -M main
+git push -u origin main
