@@ -1,0 +1,77 @@
+import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
+import session from 'express-session';
+import fs from 'fs';
+import { Client, GatewayIntentBits } from 'discord.js';
+
+import indexRoutes from './routes/index.js';
+// Import other routes as needed
+import phonesRoutes from './routes/phones.js';
+
+import { getUserByNumber, sendMessage, callUser } from './phoneSystem.js';
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+app.set('view engine','ejs');
+app.use(express.static('public'));
+app.use(express.urlencoded({extended:true}));
+app.use(session({secret:'jungleworld',resave:false,saveUninitialized:true}));
+
+// Admin session (example)
+app.use((req,res,next)=>{if(!req.session.admin) req.session.admin=true; next();});
+
+// Routes
+app.use('/', indexRoutes);
+app.use('/phones', phonesRoutes);
+
+// Socket.io live updates
+const watchedFiles = [
+  'data/911_logs.json',
+  'data/economy.json',
+  'data/dealership.json',
+  'data/penal_codes.json',
+  'data/audit_logs.json',
+  'data/jobs.json',
+  'data/gangs.json',
+  'data/blackmarket.json',
+  'data/criminal_tiers.json',
+  'data/phones.json'
+];
+watchedFiles.forEach(file=>{
+  fs.watchFile(file,()=>{
+    const data = JSON.parse(fs.readFileSync(file,'utf8')||'{}');
+    io.emit(file.split('/')[1].replace('.json',''), data);
+  });
+});
+
+// Discord Bot
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.DirectMessages] });
+client.once('ready', ()=>console.log(`Discord Bot Ready: ${client.user.tag}`));
+client.login(process.env.DISCORD_TOKEN);
+
+// Example Discord interaction (phone system)
+client.on('interactionCreate', async interaction=>{
+  if(!interaction.isCommand()) return;
+
+  if(interaction.commandName==="phone-register"){
+    const { generatePhoneNumber } = await import('./phoneSystem.js');
+    const number = generatePhoneNumber(interaction.user.id);
+    interaction.reply(`📱 Your number: ${number}`);
+  }
+
+  if(interaction.commandName==="phone-message"){
+    const fromNumber = await getUserByNumber(interaction.user.id);
+    const to = interaction.options.getString("number");
+    const text = interaction.options.getString("text");
+    const res = sendMessage(fromNumber, to, text);
+    if(res.error) return interaction.reply(`❌ ${res.error}`);
+    interaction.reply(`✉️ Message sent to ${to}`);
+  }
+});
+
+// Start server
+server.listen(3000, ()=>console.log('Dashboard running on http://localhost:3000'));
+export { io };
