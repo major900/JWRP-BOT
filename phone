@@ -1,0 +1,57 @@
+import fs from 'fs';
+
+export function generatePhoneNumber(userId){
+  const db = JSON.parse(fs.readFileSync('./data/phones.json'));
+  let number;
+  do { number = Math.floor(100000000 + Math.random()*900000000).toString(); }
+  while(db.numbers.includes(number));
+  db.numbers.push(number);
+  db.users[number] = { userId, inbox: [], calls: [], missedCalls: [], voicemail: [] };
+  fs.writeFileSync('./data/phones.json', JSON.stringify(db,null,2));
+  return number;
+}
+
+export function getUserByNumber(number){
+  const db = JSON.parse(fs.readFileSync('./data/phones.json'));
+  return db.users[number] || null;
+}
+
+export function sendMessage(fromNumber, toNumber, message){
+  const db = JSON.parse(fs.readFileSync('./data/phones.json'));
+  if(!db.users[toNumber]) return { error: "Number not found" };
+  const msg = { from: fromNumber, message, timestamp: Date.now() };
+  db.users[toNumber].inbox.push(msg);
+  fs.writeFileSync('./data/phones.json', JSON.stringify(db,null,2));
+  return { success:true, msg };
+}
+
+export function callUser(fromNumber, toNumber, leaveVoicemail=true, voicemailMessage=""){
+  const db = JSON.parse(fs.readFileSync('./data/phones.json'));
+  if(!db.users[toNumber]) return { error:"Number not found" };
+  const call = { from: fromNumber, to: toNumber, status:"ringing", timestamp: Date.now() };
+  db.users[toNumber].calls.push(call);
+  db.users[fromNumber].calls.push(call);
+
+  setTimeout(()=>{
+    const targetCall = db.users[toNumber].calls.find(c=>c.from===fromNumber && c.to===toNumber && c.status==="ringing");
+    if(targetCall){
+      targetCall.status="missed";
+      db.users[toNumber].missedCalls.push(targetCall);
+      db.users[fromNumber].calls = db.users[fromNumber].calls.filter(c=>c!==targetCall);
+      if(leaveVoicemail && voicemailMessage){
+        db.users[toNumber].voicemail.push({ from:fromNumber, message:voicemailMessage, timestamp:Date.now() });
+      }
+      fs.writeFileSync('./data/phones.json', JSON.stringify(db,null,2));
+    }
+  }, 30000);
+
+  fs.writeFileSync('./data/phones.json', JSON.stringify(db,null,2));
+  return call;
+}
+
+export function endCall(fromNumber,toNumber){
+  const db = JSON.parse(fs.readFileSync('./data/phones.json'));
+  db.users[toNumber].calls = db.users[toNumber].calls.filter(c=>c.from!==fromNumber || c.to!==toNumber);
+  db.users[fromNumber].calls = db.users[fromNumber].calls.filter(c=>c.from!==fromNumber || c.to!==toNumber);
+  fs.writeFileSync('./data/phones.json', JSON.stringify(db,null,2));
+}
