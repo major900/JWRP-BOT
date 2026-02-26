@@ -1,0 +1,42 @@
+jungle-world-rp/
+├─ server.js
+├─ package.json
+├─ tierSystem.js
+├─ phoneSystem.js
+├─ .gitignore
+├─ routes/
+│  ├─ index.js
+│  ├─ vehicles.js
+│  ├─ economy.js
+│  ├─ gangs.js
+│  ├─ jobs.js
+│  ├─ blackmarket.js
+│  ├─ penal.js
+│  ├─ 911.js
+│  ├─ criminals.js
+│  └─ phones.js
+├─ views/
+│  ├─ dashboard.ejs
+│  ├─ vehicles.ejs
+│  ├─ economy.ejs
+│  ├─ gangs.ejs
+│  ├─ jobs.ejs
+│  ├─ blackmarket.ejs
+│  ├─ penal.ejs
+│  ├─ 911.ejs
+│  ├─ criminals.ejs
+│  └─ phones.ejs
+├─ public/
+│  ├─ js/dashboard.js
+│  └─ css/style.css
+└─ data/
+   ├─ dealership.json
+   ├─ economy.json
+   ├─ gangs.json
+   ├─ jobs.json
+   ├─ blackmarket.json
+   ├─ penal_codes.json
+   ├─ 911_logs.json
+   ├─ audit_logs.json
+   ├─ criminal_tiers.json
+   └─ phones.json
