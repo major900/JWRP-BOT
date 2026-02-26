@@ -1,0 +1,27 @@
+import fs from 'fs';
+
+export function addIllegalItem(userId, item){
+  const db = JSON.parse(fs.readFileSync('./data/criminal_tiers.json'));
+  if(!db[userId]) db[userId]={items:[], tier:1};
+  db[userId].items.push(item);
+  updateTier(db, userId);
+  fs.writeFileSync('./data/criminal_tiers.json', JSON.stringify(db,null,2));
+}
+
+function updateTier(db, userId){
+  const count = db[userId].items.length;
+  if(count>=20) db[userId].tier=5;
+  else if(count>=15) db[userId].tier=4;
+  else if(count>=10) db[userId].tier=3;
+  else if(count>=5) db[userId].tier=2;
+  else db[userId].tier=1;
+}
+
+export function resetTier(userId){
+  const db = JSON.parse(fs.readFileSync('./data/criminal_tiers.json'));
+  if(db[userId]){
+    db[userId].items=[];
+    db[userId].tier=1;
+    fs.writeFileSync('./data/criminal_tiers.json', JSON.stringify(db,null,2));
+  }
+}
